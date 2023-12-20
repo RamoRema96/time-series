@@ -1,4 +1,4 @@
-from dash import Dash, html, dash_table, dcc
+from dash import Dash, html, dash_table, dcc, callback, Output, Input, State
 import pandas as pd
 import plotly.express as px
 from preprocessing import PrePro
@@ -12,7 +12,10 @@ plot = Plot()
 analysis = Analysis()
 prepro.to_datetime(df=train_data, name_column="date")
 rolling_window_plot, adfuller_test = analysis.check_stationarity(train_data,"meantemp",12)
-print(adfuller_test)
+lag = int(input("Inserisci il numero di lag: ")) # 3000
+acf_plot = analysis.acf_plot(train_data, "meantemp", lag)
+period=int(input("Inserisci il periodo della seasonality: ")) #362
+decomposition, result = analysis.decomposition_time_series(train_data, "meantemp", period, "Mean Temp" )
 
 # Initialize the app
 app = Dash(__name__)
@@ -30,7 +33,7 @@ app.layout = html.Div([
     
     html.Div([
         html.H3(children='Rolling Window Analysis'),
-        dcc.Graph(figure=rolling_window_plot)  # Use the returned figure here
+        dcc.Graph(figure=rolling_window_plot)  
     ]),
 
  html.Div([
@@ -40,13 +43,56 @@ app.layout = html.Div([
             p-value: {1} \n
             {2}
         '''.format(*adfuller_test))
-    ])
+    ]),
 
+      html.Div([
+        html.Label("Select lag:"),
+        dcc.Slider(
+            id='lag-slider',
+            min=1,
+            max=5000,
+            step=1,
+            marks={i: str(i) for i in range(0, 5001, 500)},
+            value=3000
+        ),
+        html.H3(children='Auotocorrelation function analysis'),
+        dcc.Graph(id='acf-plot')  
+    ], style={'margin': '10px'}),
+    
+    html.Div([
+        html.Label("Select period seasonality:"),
+        dcc.Slider(
+            id='period-slider',
+            min=1,
+            max=500,
+            step=1,
+            marks={i: str(i) for i in range(0, 501, 50)},
+            value=362
+        ),
+        html.H3(children='Decomposition Time Series'),
+        dcc.Graph(id="decomposition-plot")  
+    ])
 
 
 ])
 
 
+# Define callback to update acf-plot
+@app.callback(
+    Output('acf-plot', 'figure'),
+    Input('lag-slider', 'value'),
+)
+def update_acf_plot(lag):
+    acf_plot = analysis.acf_plot(train_data, "meantemp", lag)
+    return acf_plot
+
+@app.callback(
+    Output('decomposition-plot', 'figure'),
+    Input('period-slider', 'value'),
+)
+def update_decomposition_plot(period):
+    decomposition, result = analysis.decomposition_time_series(train_data, "meantemp", period, "Mean Temp" )
+    return decomposition
 
 
 
@@ -62,4 +108,4 @@ try:
         pass
 except KeyboardInterrupt:
     # When Ctrl+C is pressed, stop the server and exit
-    print("\nStopping the Dash app...")
+    print("\nStopping the Dash app...") 
