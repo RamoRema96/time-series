@@ -28,4 +28,4 @@ class Plot:
     
         if verbose:
             fig.write_html(f'{title}.html')
-        #fig.show()
+        return fig
