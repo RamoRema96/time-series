@@ -2,6 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import adfuller
 import plotly.graph_objs as go
+from statsmodels.tsa.stattools import acf
+from statsmodels.tsa.seasonal import STL
 class Analysis:
     def __init__(self) -> None:
         pass
@@ -43,15 +45,54 @@ class Analysis:
         fig = go.Figure()
 
         # Add traces for original, rolling mean, and rolling standard deviation
-        fig.add_trace(go.Scatter(x=df.index, y=df[name], mode='lines', name='Original'))
-        fig.add_trace(go.Scatter(x=df.index, y=df["rolling_mean"], mode='lines', name='Rolling Mean'))
-        fig.add_trace(go.Scatter(x=df.index, y=df["rolling_standard_deviation"], mode='lines', name='Rolling Std'))
+        fig.add_trace(go.Scatter(x=df["date_datetime"], y=df[name], mode='lines', name='Original'))
+        fig.add_trace(go.Scatter(x=df["date_datetime"], y=df["rolling_mean"], mode='lines', name='Rolling Mean'))
+        fig.add_trace(go.Scatter(x=df["date_datetime"], y=df["rolling_standard_deviation"], mode='lines', name='Rolling Std'))
 
         # Add layout information
         fig.update_layout(title='Rolling Window Analysis', xaxis_title='Date', yaxis_title=name)
 
         # Return the Plotly figure
         return fig
+    
+    def acf_plot(self, df:pd.DataFrame, name:str, lags):
+
+        acf_values = acf(df[name], nlags=lags)
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(x=list(range(lags + 1)), y=acf_values, mode='lines+markers', name='ACF'))
+
+        fig.update_layout(title='Autocorrelation Function (ACF) Plot',
+                      xaxis=dict(title='Lag'),
+                      yaxis=dict(title='Autocorrelation'),
+                      showlegend=True)
+
+        return fig
+    def decomposition_time_series(self, df:pd.DataFrame, name:str, period:int, title:str):
+        result = STL(df[name], period=period).fit()
+
+       # Create an interactive plot with Plotly
+        fig = go.Figure()
+
+        # Oiginal Series
+        fig.add_trace(go.Scatter(x=df["date_datetime"], y=df['meantemp'], mode='lines', name='Original Series'))
+
+        # Trend Component
+        fig.add_trace(go.Scatter(x=df["date_datetime"], y=result.trend, mode='lines', name='Trend Component'))
+
+        # Seasonal Component
+        fig.add_trace(go.Scatter(x=df["date_datetime"], y=result.seasonal, mode='lines', name='Seasonal Component'))
+
+        #  Residual Component
+        fig.add_trace(go.Scatter(x=df["date_datetime"], y=result.resid, mode='lines', name='Residual Component'))
+
+       # Update layout
+        fig.update_layout(title='Time Series Decomposition',
+                      xaxis=dict(title='Date'),
+                      yaxis=dict(title=title),
+                      showlegend=True)
+
+        return fig, result
 
     
         
