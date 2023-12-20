@@ -16,6 +16,8 @@ lag = int(input("Inserisci il numero di lag: ")) # 3000
 acf_plot = analysis.acf_plot(train_data, "meantemp", lag)
 period=int(input("Inserisci il periodo della seasonality: ")) #362
 decomposition, result = analysis.decomposition_time_series(train_data, "meantemp", period, "Mean Temp" )
+residuals = pd.DataFrame({"meantemp":result.resid, "date_datetime":train_data["date_datetime"]})
+rolling_window_plot_after_dec, adfuller_test_after_dec = analysis.check_stationarity(residuals, name="meantemp", window_size=12)
 
 # Initialize the app
 app = Dash(__name__)
@@ -71,6 +73,20 @@ app.layout = html.Div([
         ),
         html.H3(children='Decomposition Time Series'),
         dcc.Graph(id="decomposition-plot")  
+    ]),
+
+ html.Div([
+        html.H3(children='Rolling Window Analysis'),
+        dcc.Graph(figure=rolling_window_plot_after_dec)  
+    ]),
+
+ html.Div([
+        html.H3(children='ADF Test Results'),
+        dcc.Markdown('''
+            ADF Statistic: {0} \n
+            p-value: {1} \n
+            {2}
+        '''.format(*adfuller_test_after_dec))
     ])
 
 
