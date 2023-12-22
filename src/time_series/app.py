@@ -2,22 +2,49 @@ from dash import Dash, html, dash_table, dcc, callback, Output, Input, State
 import pandas as pd
 import plotly.express as px
 from preprocessing import PrePro
-from validation import Plot
+from validation import Validation
 from analysis import Analysis
 # Incorporate data
 file_path_train = "/Users/omare/Desktop/personal_project/time-series/data/DailyDelhiClimateTrain.csv"
+file_path_test = "/Users/omare/Desktop/personal_project/time-series/data/DailyDelhiClimateTest.csv"
 train_data = pd.read_csv(file_path_train)
+test_data = pd.read_csv(file_path_test)
+
 prepro = PrePro()
-plot = Plot()
+validation = Validation()
 analysis = Analysis()
+
 prepro.to_datetime(df=train_data, name_column="date")
+prepro.to_datetime(df=test_data, name_column="date")
+
 rolling_window_plot, adfuller_test = analysis.check_stationarity(train_data,"meantemp",12)
 lag = int(input("Inserisci il numero di lag: ")) # 3000
 acf_plot = analysis.acf_plot(train_data, "meantemp", lag)
 period=int(input("Inserisci il periodo della seasonality: ")) #362
+
 decomposition, result = analysis.decomposition_time_series(train_data, "meantemp", period, "Mean Temp" )
 residuals = pd.DataFrame({"meantemp":result.resid, "date_datetime":train_data["date_datetime"]})
+trend = pd.DataFrame({"meantemp":result.trend, "date_datetime":train_data["date_datetime"]})
+seasonality = pd.DataFrame({"meantemp":result.seasonal, "date_datetime":train_data["date_datetime"]})
+
 rolling_window_plot_after_dec, adfuller_test_after_dec = analysis.check_stationarity(residuals, name="meantemp", window_size=12)
+forecast_residuals = analysis.forecast_component(residuals,test_data, (1,0,1),)
+forecast_trend = analysis.forecast_component(trend, test_data, (1,4,1))
+forecast_residuals.reset_index(inplace=True)
+forecast_trend.reset_index(inplace=True)
+
+start_date_seasonal = "2013-01-01"
+end_date_seasonal = "2013-04-24"
+start_date_seasonal = pd.to_datetime(start_date_seasonal)
+end_date_seasonal = pd.to_datetime(end_date_seasonal)
+
+forecast_seasonal = seasonality[(seasonality['date_datetime'] >= start_date_seasonal) & (seasonality['date_datetime'] <= end_date_seasonal)]
+forecast_seasonal.reset_index(inplace=True)
+
+forecast = pd.DataFrame()
+forecast["meantemp"] = forecast_trend["forecast"] + forecast_seasonal["meantemp"]+ forecast_residuals["forecast"]
+forecast["date_datetime"] = forecast_trend["date_datetime"]
+
 
 # Initialize the app
 app = Dash(__name__)
@@ -29,7 +56,7 @@ app.layout = html.Div([
     
     html.Div([
         dcc.Graph(
-            figure=plot.plot_time_series(df=train_data, x="date", y="meantemp", title=f"Time Series Temperature")
+            figure=validation.plot_time_series(df=train_data, x="date", y="meantemp", title=f"Time Series Temperature")
         )
     ], style={'margin': '10px'}),  # Adjust margin as needed
     
@@ -87,10 +114,29 @@ app.layout = html.Div([
             p-value: {1} \n
             {2}
         '''.format(*adfuller_test_after_dec))
-    ])
+    ]),
 
+html.Div(className='row', children='Autocorrelation function resiudals',
+             style={'textAlign': 'center', 'color': 'blue', 'fontSize': 30}),
+html.Div([
+        dcc.Graph(figure= analysis.acf_plot(residuals, "meantemp", 40))  
+    ]),
+
+html.Div(className='row', children='Partial Autocorrelation function resiudals',
+             style={'textAlign': 'center', 'color': 'blue', 'fontSize': 30}),
+html.Div([
+        dcc.Graph(figure= analysis.pacf_plot(residuals, "meantemp", 40))  
+    ]),
+
+html.Div(className='row', children='Forecast vs True Values',
+             style={'textAlign': 'center', 'color': 'blue', 'fontSize': 30}),
+html.Div([
+        dcc.Graph(figure=validation.evaluate_forecast_plot(forecast, test_data, "meantemp", "Mean Temperature" ) )  
+    ]),
 
 ])
+
+
 
 
 # Define callback to update acf-plot
