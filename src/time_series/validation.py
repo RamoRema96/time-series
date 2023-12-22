@@ -1,7 +1,8 @@
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
-class Plot:
+class Validation:
     def __init__(self) -> None:
         pass
 
@@ -28,4 +29,18 @@ class Plot:
     
         if verbose:
             fig.write_html(f'{title}.html')
+        return fig
+    
+    def mse_error(self, forecast:pd.DataFrame, test_data:pd.DataFrame, name:str):
+        return ((forecast[name] - test_data[name])**2).mean()
+    
+
+    def evaluate_forecast_plot(self, forecast:pd.DataFrame, test_data:pd.DataFrame, name:str, y_label:str):
+        actual_values = test_data[name]
+        forecast_values = forecast[name]
+        actual_trace = go.Scatter(x=test_data['date_datetime'], y=actual_values, mode='lines', name='Actual')
+        forecast_trace = go.Scatter(x=forecast['date_datetime'], y=forecast_values, mode='lines', name='Forecast')
+        layout = go.Layout(title='Actual vs Forecasted Values', xaxis=dict(title='Date'), yaxis=dict(title=f'{y_label}'))
+        fig = go.Figure(data=[actual_trace, forecast_trace], layout=layout)
+
         return fig

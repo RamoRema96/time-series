@@ -2,8 +2,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import adfuller
 import plotly.graph_objs as go
-from statsmodels.tsa.stattools import acf
+from statsmodels.tsa.stattools import acf, pacf
 from statsmodels.tsa.seasonal import STL
+from statsmodels.tsa.arima.model import ARIMA
 class Analysis:
     def __init__(self) -> None:
         pass
@@ -55,7 +56,7 @@ class Analysis:
         # Return the Plotly figure
         return fig
     
-    def acf_plot(self, df:pd.DataFrame, name:str, lags):
+    def acf_plot(self, df:pd.DataFrame, name:str, lags:int):
 
         acf_values = acf(df[name], nlags=lags)
         fig = go.Figure()
@@ -68,6 +69,21 @@ class Analysis:
                       showlegend=True)
 
         return fig
+    
+    def pacf_plot(self, df: pd.DataFrame, name: str, lags: int):
+        pacf_values = pacf(df[name], nlags=lags)
+
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(x=list(range(lags + 1)), y=pacf_values, mode='lines+markers', name='PACF'))
+
+        fig.update_layout(title='Partial Autocorrelation Function (PACF) Plot',
+                          xaxis=dict(title='Lag'),
+                          yaxis=dict(title='Partial Autocorrelation'),
+                          showlegend=True)
+
+        return fig
+
     def decomposition_time_series(self, df:pd.DataFrame, name:str, period:int, title:str):
         result = STL(df[name], period=period).fit()
 
@@ -93,6 +109,23 @@ class Analysis:
                       showlegend=True)
 
         return fig, result
+    def forecast_component(self,train: pd.DataFrame, test:pd.DataFrame, order: tuple):
+    #train_size = int(len(df) * train_used)  # 80% for training
+    
+    
+        model = ARIMA(train['meantemp'], order=order)
+        fitted_model = model.fit()
+
+        # Forecast future values
+        forecast_steps = len(test)
+        predictions = fitted_model.get_forecast(steps=forecast_steps)
+
+        # Create a DataFrame with forecast values and corresponding dates
+        forecast_dates = pd.date_range(start=train['date_datetime'].iloc[-1], periods=forecast_steps, freq='D')
+        forecast_df = pd.DataFrame({'date_datetime': forecast_dates, 'forecast': predictions.predicted_mean})
+
+        return forecast_df
+
 
     
         
