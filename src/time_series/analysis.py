@@ -10,6 +10,18 @@ class Analysis:
         pass
 
     def check_stationarity(self, df:pd.DataFrame, name:str, window_size:int):
+        """
+        Check stationarity of a time series.
+
+        Parameters:
+            df (pd.DataFrame): The DataFrame containing the time series.
+            name (str): The name of the column representing the time series.
+            window_size (int): The size of the rolling window for stationarity analysis.
+
+        Returns:
+            tuple: A tuple containing Plotly figure for rolling window analysis and results of ADF test.
+
+        """
         self.__check_stationarity_approx(df, name)
         rolling_window_plot =self.__stationarity_rolling_window(df,name, window_size)
         adfuller_test = self.__adfuller_test(df, name)
@@ -57,6 +69,19 @@ class Analysis:
         return fig
     
     def acf_plot(self, df:pd.DataFrame, name:str, lags:int):
+        
+        """
+        Plot the Autocorrelation Function (ACF).
+
+        Parameters:
+            df (pd.DataFrame): The DataFrame containing the time series.
+            name (str): The name of the column representing the time series.
+            lags (int): The number of lags to consider.
+
+        Returns:
+            go.Figure: A Plotly figure representing the ACF plot.
+
+        """
 
         acf_values = acf(df[name], nlags=lags)
         fig = go.Figure()
@@ -71,6 +96,19 @@ class Analysis:
         return fig
     
     def pacf_plot(self, df: pd.DataFrame, name: str, lags: int):
+        
+        """
+        Plot the Partial Autocorrelation Function (PACF).
+
+        Parameters:
+            df (pd.DataFrame): The DataFrame containing the time series.
+            name (str): The name of the column representing the time series.
+            lags (int): The number of lags to consider.
+
+        Returns:
+            go.Figure: A Plotly figure representing the PACF plot.
+
+        """
         pacf_values = pacf(df[name], nlags=lags)
 
         fig = go.Figure()
@@ -85,6 +123,20 @@ class Analysis:
         return fig
 
     def decomposition_time_series(self, df:pd.DataFrame, name:str, period:int, title:str):
+
+        """
+        Decompose a time series into trend, seasonality, and residuals.
+
+        Parameters:
+            df (pd.DataFrame): The DataFrame containing the time series.
+            name (str): The name of the column representing the time series.
+            period (int): The period of the seasonality component.
+            title (str): The title for the Plotly figure.
+
+        Returns:
+            tuple: A tuple containing the Plotly figure for time series decomposition and decomposition result.
+
+        """
         result = STL(df[name], period=period).fit()
 
        # Create an interactive plot with Plotly
@@ -110,9 +162,18 @@ class Analysis:
 
         return fig, result
     def forecast_component(self,train: pd.DataFrame, test:pd.DataFrame, order: tuple):
-    #train_size = int(len(df) * train_used)  # 80% for training
-    
-    
+        """
+        Forecast a time series component using ARIMA model.
+
+        Parameters:
+            train (pd.DataFrame): The training set for the time series component.
+            test (pd.DataFrame): The test set for the overall time series.
+            order (tuple): The order of the ARIMA model.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the forecasted values and corresponding dates.
+
+        """
         model = ARIMA(train['meantemp'], order=order)
         fitted_model = model.fit()
 
