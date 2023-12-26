@@ -5,6 +5,7 @@ from preprocessing import PrePro
 from validation import Validation
 from analysis import Analysis
 import os 
+import numpy as np
 # # Incorporate data
 script_dir = os.path.dirname(os.path.realpath(__file__))
 # Construct file paths based on the project structure
@@ -48,6 +49,9 @@ forecast_seasonal.reset_index(inplace=True)
 forecast = pd.DataFrame()
 forecast["meantemp"] = forecast_trend["forecast"] + forecast_seasonal["meantemp"]+ forecast_residuals["forecast"]
 forecast["date_datetime"] = forecast_trend["date_datetime"]
+mse = validation.mse_error(forecast, test_data, "meantemp" )
+percentage_error = validation.percentage_error(forecast,test_data,"meantemp")
+print(f" Mean squared error: {round(mse,2)}  \n Root Mean Squared error: {round(np.sqrt(mse),2)} \n Percentage error: {round(percentage_error,2)} %")
 
 
 # Initialize the app
