@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  timeseries:
+    image: timeseries
+    build:
+      context: .
+      dockerfile: ./Dockerfile
