@@ -4,9 +4,13 @@ import plotly.express as px
 from preprocessing import PrePro
 from validation import Validation
 from analysis import Analysis
-# Incorporate data
-file_path_train = "/Users/omare/Desktop/personal_project/time-series/data/DailyDelhiClimateTrain.csv"
-file_path_test = "/Users/omare/Desktop/personal_project/time-series/data/DailyDelhiClimateTest.csv"
+import os 
+# # Incorporate data
+script_dir = os.path.dirname(os.path.realpath(__file__))
+# Construct file paths based on the project structure
+file_path_train = os.path.join(script_dir, "..", "..", "data", "DailyDelhiClimateTrain.csv")
+file_path_test = os.path.join(script_dir, "..", "..", "data", "DailyDelhiClimateTest.csv")
+
 train_data = pd.read_csv(file_path_train)
 test_data = pd.read_csv(file_path_test)
 
